@@ -1,3 +1,9 @@
+// BAHT: injected on every in-page navigation – run once per page, in its own scope
+// (top-level const/let made every second injection fail: "Script failed to execute").
+(() => {
+if (window.__bahtInjected) return;
+window.__bahtInjected = true;
+
 // Mensajes de estado.
 /* const msgDB = {
     es: {
@@ -221,3 +227,5 @@ document.onmousemove = () => {
 }
 
 console.log('JavaScript enhancements loaded at', new Date(Date.now()).toISOString());
+
+})();
