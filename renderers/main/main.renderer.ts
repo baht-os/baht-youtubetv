@@ -7,12 +7,12 @@ import { Settings } from '../settings/settings.renderer';
 import { app,
          BrowserWindow,
          nativeImage,
-         globalShortcut,
          Menu,
          screen,
          ipcMain, 
          session} from 'electron';
 import { DataModel } from '../../models/data.interface';
+import { allowedUrl } from './allowed';
 import main from '../../main';
 
 export interface resolution {
@@ -33,6 +33,9 @@ interface windowParams {
 }
 
 type resolutionString = '8k' | '4k' | '2k' | '1080p' | '720p';
+
+/** Started by BAHT TV OS (tiles.json: --baht): always fullscreen, no window frame, no cursor. */
+export const BAHT = process.argv.includes('--baht');
 
 export class Renderer {
 
@@ -162,15 +165,23 @@ export class Renderer {
             title: 'YouTube TV',
             backgroundColor: '#282828',
             icon: nativeImage.createFromPath(join(cwd(), 'build', 'icon.png')),
+            // BAHT: the page is youtube.com – no Node, isolated, sandboxed; preload exposes one IPC call
             webPreferences: {
-                nodeIntegration: true,
+                nodeIntegration: false,
                 backgroundThrottling: false,
-                contextIsolation: false,
-                //partition: `persist`,//:${Math.random().toString()}`,
+                contextIsolation: true,
+                sandbox: true,
+                preload: join(__dirname, 'preload.js'),
                 autoplayPolicy: 'no-user-gesture-required',
-                plugins: true
+                devTools: main.DEVMODE
             }
         });
+
+        if (BAHT) {
+            this.window.setFullScreen(true);
+            this.window.setKiosk(true);
+        }
+        this.lockNavigation(this.window.webContents);
 
         this.window.webContents.session.webRequest.onBeforeSendHeaders(
 
@@ -303,25 +314,38 @@ export class Renderer {
     }
 
     /**
-     * Listen keyboard shortcuts to perform some actions.
+     * Keyboard shortcuts – only while this window has the focus (upstream used globalShortcut, which grabs the
+     * keys from every other program on the desktop).
      */
     private setAccelerators() {
 
-        globalShortcut.register('ctrl+s', () => {
-            if (this.settings) {
-                this.settings.destroy();
-                this.settings = null;
-            } else {
-                this.settings = new Settings();
-            }
+        this.window.webContents.on('before-input-event', (event, input) => {
+            if (input.type !== 'keyDown' || !input.control) return;
+            const key = input.key.toLowerCase();
+            if (key === 's' && !BAHT) {
+                if (this.settings) {
+                    this.settings.destroy();
+                    this.settings = null;
+                } else {
+                    this.settings = new Settings();
+                }
+            } else if (key === 'f' && !BAHT) this.fullScreen = !this.window.isFullScreen();
+            else if (key === 'd' && main.DEVMODE) this.window.webContents.toggleDevTools();
+            else if (key === 'a') this.cursor = null;
+            else return;
+            event.preventDefault();
         })
 
-        globalShortcut.register('ctrl+f', () => { this.fullScreen = !this.window.isFullScreen(); })
+    }
 
-        globalShortcut.register('ctrl+d', () => { this.window.webContents.toggleDevTools(); })
-
-        globalShortcut.register('ctrl+a', () => this.cursor = null);
-        
+    /** No navigation, pop-up or permission outside YouTube / Google sign-in. */
+    private lockNavigation(contents: Electron.WebContents) {
+        contents.on('will-navigate', (event, url) => { if (!allowedUrl(url)) event.preventDefault(); });
+        contents.on('will-redirect', (event, url) => { if (!allowedUrl(url)) event.preventDefault(); });
+        contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+        contents.session.setPermissionRequestHandler((_wc, permission, callback) => {
+            callback(['fullscreen', 'media', 'mediaKeySystem'].includes(permission));
+        });
     }
 
     private listenWindowEvents() {

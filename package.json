@@ -1,8 +1,8 @@
 {
-    "name": "youtube-tv",
-    "productName": "YouTube TV",
-    "version": "3.0.1",
-    "description": "Simple YouTube TV client for desktop based on electron.",
+    "name": "baht-youtubetv",
+    "productName": "BAHT YouTube TV",
+    "version": "3.0.1-baht.1",
+    "description": "YouTube TV (leanback) for BAHT TV OS – fork of marcosrg9/YouTubeTV.",
     "main": "main.js",
     "scripts": {
         "start": "tsc && electron main.js",
@@ -12,47 +12,45 @@
         "build:mac": "electron-builder --mac --x64 --arm64",
         "build:winARM": "electron-builder --win --arm64",
         "build:winx64": "electron-builder --win --x64",
-        "build:linux": "electron-builder --linux --x64",
-        "buildRetinaDMGBackground": "tiffutil -cathidpicheck background.png background@2x.png -out background.tiff"
+        "build:linux": "electron-builder --linux dir --x64",
+        "buildRetinaDMGBackground": "tiffutil -cathidpicheck background.png background@2x.png -out background.tiff",
+        "build:baht": "npm run compile && electron-builder --linux dir --x64 --publish never",
+        "test": "tsc && node --test test/allowed.test.js"
     },
     "dependencies": {
-        "auto-launch": "^5.0.6",
-        "express": "^4.17.1",
-        "peer-dial": "0.0.8"
+        "auto-launch": "^5.0.6"
     },
     "devDependencies": {
         "@ghostery/adblocker-electron": "^2.13.0",
         "@types/auto-launch": "^5.0.5",
-        "@types/express": "^4.17.13",
-        "@types/node": "^18.7.14",
-        "@types/peer-dial": "0.0.1",
-        "electron": "github:castlabs/electron-releases#v37.10.3+wvcus",
-        "electron-builder": "^23.0.2",
-        "typescript": "^4.7.3"
+        "@types/node": "^22.20.5",
+        "electron": "44.8.0",
+        "electron-builder": "^26.15.3",
+        "typescript": "~5.9.3"
     },
     "build": {
-        "productName": "YouTube TV",
-        "appId": "com.youtube.tv",
+        "productName": "BAHT YouTube TV",
+        "appId": "org.baht.youtubetv",
         "asar": true,
-        "afterPack": "./build/hooks/castlabs-sign.js",
         "directories": {
-            "output": "../YTV_Builds"
+            "output": "dist"
         },
         "extraResources": [
             {
                 "from": "./data/persistence.placeholder.json",
                 "to": "./data/persistence.placeholder.json",
-                "filter": [ "**/*" ]
+                "filter": [
+                    "**/*"
+                ]
             },
             {
                 "from": "./i18n/",
                 "to": "./i18n/",
-                "filter": [ "**/*.json" ]
+                "filter": [
+                    "**/*.json"
+                ]
             }
         ],
-        "electronDownload": {
-            "mirror": "https://github.com/castlabs/electron-releases/releases/download/v"
-        },
         "mac": {
             "category": "public.app-category.entertainment",
             "target": "dmg",
@@ -75,16 +73,19 @@
         },
         "linux": {
             "target": [
-                "deb",
-                "rpm"
+                "dir"
             ],
+            "executableName": "baht-youtubetv",
             "icon": "build/icon.icns",
-            "packageCategory": "AudioVideo"
+            "category": "AudioVideo"
         },
         "win": {
             "target": "NSIS",
             "icon": "build/icon.ico"
         }
     },
-    "author": "Marcos Rodríguez <marcosylrg@gmail.com>"
+    "author": "Marcos Rodríguez <marcosylrg@gmail.com>",
+    "contributors": [
+        "BAHT project <https://github.com/baht-os>"
+    ]
 }

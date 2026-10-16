@@ -8,16 +8,12 @@
 import { app, dialog, shell } from 'electron';
 import { Renderer } from './renderers/main/main.renderer';
 import { Settings } from './renderers/settings/settings.renderer';
-import { Dial } from './servers/DIAL';
 import { Persistence } from './data/persistence';
-import { Updater } from './updateAgent';
 import { I18n } from './i18n/i18n';
 import { Dialog } from './utils/dialog.util';
 
 class Main {
 
-    /** Contains DIAL server instance. */
-    public dial:       Dial;
     /** Contains the main renderer instance. */
     public renderer:   Renderer;
     /** Contiene la carga del archivo de configuración. */
@@ -38,11 +34,9 @@ class Main {
             try {
                 await this.loadLanguage();
                 await this.loadSettings();
-                await this.checkUpdates();
-                const { DIAL, keepSize, resolution } = this.persistence.data;
+                const { keepSize, resolution } = this.persistence.data;
 
-                // Si DIAL está activo, instancia el servidor DIAL.
-                if(DIAL.enabled) this.dial = new Dial(DIAL.name);
+                // BAHT: no DIAL server in phase 1 (see BAHT.md – casting returns as an own implementation).
     
                 // Instancia el renderizador.
                 this.renderer = new Renderer({ keepSize, resolution });
@@ -101,9 +95,10 @@ class Main {
 
     }
 
+    /** BAHT: never called – BAHT ships signed updates of this app with the system. */
     private checkUpdates() {
 
-        return Updater.checkUpdates()
+        return Promise.resolve(false)
         .then(updateAvailable => {
 
             if(updateAvailable) {

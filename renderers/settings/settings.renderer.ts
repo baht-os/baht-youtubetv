@@ -1,8 +1,7 @@
-import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import main from '../../main';
 import { DataModel } from '../../models/data.interface';
-import { Dial } from '../../servers/DIAL';
 
 export class Settings {
 
@@ -33,7 +32,9 @@ export class Settings {
 				renderer.setMaxRes(params);
 			})
 
-			globalShortcut.register('ctrl+shift+d', () => { this.window.webContents.toggleDevTools() });
+			// BAHT: local settings page only – never navigates away (it has Node access)
+			this.window.webContents.on('will-navigate', (event) => event.preventDefault());
+			this.window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
 			this.window.loadFile(join(__dirname, './index.html'));
 
@@ -66,19 +67,7 @@ export class Settings {
 				main.persistence.data.background = settings.background;
 				main.persistence.data.userAgent.customUA = settings.userAgent.customUA;
 
-				// Si DIAL está activado.
-				if(settings.DIAL.enabled) {
-					// Si no existe instancia DIAL, crea una con el nombre.
-					if(!main.dial) main.dial = new Dial(settings.DIAL.name);
-					// En caso contrario
-					else {
-						// Reemplaza el nombre.
-						main.dial.friendlyName = settings.DIAL.name;
-						// Si no se está escuchando, escucha.
-						if(!main.dial.listening) main.dial.start();
-					}
-				// En caso contrario, si existe una instancia DIAL, detiene el servidor.
-				} else if(main.dial) main.dial.stop();
+				// BAHT: DIAL settings are stored, no server is started (phase 1).
 				
 			})
 		})
